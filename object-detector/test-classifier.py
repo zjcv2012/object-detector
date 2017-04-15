@@ -7,6 +7,7 @@ import cv2
 import argparse as ap
 from nms import nms
 from config import *
+import numpy as np
 
 def sliding_window(image, window_size, step_size):
     '''
@@ -41,7 +42,7 @@ if __name__ == "__main__":
 
     # Read the image
     im = imread(args["image"], as_grey=False)
-    min_wdw_sz = (100, 40)
+    min_wdw_sz = (32, 64)
     step_size = (10, 10)
     downscale = args['downscale']
     visualize_det = args['visualize']
@@ -59,14 +60,15 @@ if __name__ == "__main__":
         cd = []
         # If the width or height of the scaled image is less than
         # the width or height of the window, then end the iterations.
-        if im_scaled.shape[0] < min_wdw_sz[1] or im_scaled.shape[1] < min_wdw_sz[0]:
+        if im_scaled.shape[0] < min_wdw_sz[1]*5 or im_scaled.shape[1] < min_wdw_sz[0]*5:
             break
         for (x, y, im_window) in sliding_window(im_scaled, min_wdw_sz, step_size):
             if im_window.shape[0] != min_wdw_sz[1] or im_window.shape[1] != min_wdw_sz[0]:
                 continue
             # Calculate the HOG features
             fd = hog(im_window, orientations, pixels_per_cell, cells_per_block, visualize, normalize)
-            pred = clf.predict(fd)
+            temp = np.array(fd).reshape((1, -1))
+            pred = clf.predict(temp)
             if pred == 1:
                 print  "Detection:: Location -> ({}, {})".format(x, y)
                 print "Scale ->  {} | Confidence Score {} \n".format(scale,clf.decision_function(fd))
